@@ -1,0 +1,52 @@
+name: Flutter CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # Fetch repository contents
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Install the Flutter SDK (stable channel) with caching
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      # Restore Dart/Flutter packages
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Execute unit/widget tests
+      - name: Run tests
+        run: flutter test
+
+      # Produce a signed-ready release APK (unsigned here)
+      - name: Build Android APK (release)
+        run: flutter build apk --release --dart-define APP_ENV=prod
+
+      # Produce a release web build
+      - name: Build Web (release)
+        run: flutter build web --release --dart-define APP_ENV=prod
+
+      # Upload Android APK for download from the workflow run
+      - name: Upload Android APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      # Upload the release web build for previews/deployment
+      - name: Upload Web build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: build/web
